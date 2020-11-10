@@ -3,29 +3,80 @@ title: "Data Cleaning in the Face of Data Issues"
 subtitle: "Exploring the NYPD Misconduct Complaint Database"
 author: "Monica Thieu & Paul Bloom"
 institute: "Dept of Psychology, Columbia University"
-date: "2020/11/12 (updated: `r Sys.Date()`)"
+date: "2020-11-12 (updated: `r Sys.Date()`)"
 output:
   xaringan::moon_reader:
     css: ["theme.css", "fonts.css"]
     lib_dir: libs
     nature:
+      highlightLanguage: r
       highlightStyle: solarized-light
       highlightLines: true
       countIncrementalSlides: false
 ---
-
-background-image: url(https://upload.wikimedia.org/wikipedia/commons/b/be/Sharingan_triple.svg)
 
 ```{r setup, include=FALSE}
 options(htmltools.dir.version = FALSE)
 require(tidyverse)
 require(magrittr)
 require(english)
+require(DT)
+require(knitr)
+require(rlang)
+
+these_dt_options <- list(pageLength = 7, dom = "tipr", scrollX = TRUE)
+kable_ncol <- function (df, n = 2, ...) {
+  dots = enexprs(...)
+  df %>% 
+  mutate(column = cut(1:n(), breaks = n, labels = FALSE)) %>% 
+  nest(data = -column) %>% 
+  pull(data) %>% 
+  kable({{dots}})
+}
+this_fill <- "#008ee0"
+this_theme <- theme_bw() +
+  theme(axis.text = element_text(size = rel(1)),
+        axis.title = element_text(size = rel(1.1)),
+        title = element_text(size = rel(1.2)))
 ```
+
+### A non-exhaustive list of related reports
+
+["Mission Failure: Civilian Review of Policing in New York City -- Summary of Findings", NYCLU, 2006](https://www.nyclu.org/en/mission-failure-civilian-review-policing-new-york-city-summary-findings)
+
+["Police Officers Rarely Disciplined by NYPD for Misconduct", WNYC, Aug 27 2014](https://www.wnyc.org/story/nypds-poor-track-record-meting-out-discipline-officer-misconduct/)
+
+["Newly Released Data Shows 1 Out Of Every 9 NYPD Officers Has A Confirmed Record Of Misconduct", Gothamist, July 28 2020](https://gothamist.com/news/nypd-police-ccrb-database-shows-confirmed-record-misconduct)
+
+["The NYPD Is Withholding Evidence From Investigations Into Police Abuse", ProPublica, Aug 17 2020](https://www.propublica.org/article/the-nypd-is-withholding-evidence-from-investigations-into-police-abuse)
+
+["Why The Majority Of NYPD Misconduct Complaints End Up 'Unsubstantiated'", Gothamist, August 18 2020](https://gothamist.com/news/why-the-majority-of-nypd-misconduct-complaints-end-up-unsubstantiated)
+
+["323,911 Accusations of N.Y.P.D. Misconduct Are Released Online", New York Times, Aug 20 2020](https://www.nytimes.com/2020/08/20/nyregion/nypd-ccrb-records-published.html)
+
+["What happened to NYPD officers who were charged with misconduct? They were promoted or paid more." Columbia Spectator, Sept 22 2020](https://www.columbiaspectator.com/news/2020/09/22/what-happened-to-nypd-officers-who-were-charged-with-misconduct-they-were-promoted-or-paid-more/)
+
+---
+
+### The NYPD Misconduct Complaint Database
+
+.pull-left[
+
+From the [New York Civil Liberties Union](https://www.nyclu.org/en/campaigns/nypd-misconduct-database):
+
+>The NYPD Misconduct Complaint Database is a repository of complaints made by the public on record at the Civilian Complaint Review Board (CCRB). These complaints span two distinct periods: the time since the CCRB started operating as an independent city agency outside the NYPD in 1994 and the prior period when the CCRB operated within the NYPD. The database includes 323,911 unique complaint records involving 81,550 active or former NYPD officers. The database does not include pending complaints for which the CCRB has not completed an investigation as of July 2020.
+
+]
+
+.pull-right[
+
+![](https://upload.wikimedia.org/wikipedia/en/3/32/CCRB_logo.png)
+
+]
 
 ???
 
-Image credit: [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Sharingan_triple.svg)
+Image credit: [Wikimedia Commons](https://en.wikipedia.org/wiki/Civilian_Complaint_Review_Board#/media/File:CCRB_logo.png)
 
 ---
 class: inverse, middle
@@ -40,13 +91,17 @@ The data are uploaded on the [New York Civil Liberties Union's GitHub account](h
 
 ---
 
-Clicking the "Download" button takes us to the link for the raw CSV hosted on GitHub. We can see in the browser that this is indeed straight up comma-separated values, so reading data from this link directly into an R dataframe should work smoothly.
+Clicking the "Download" button takes us to the link for the raw CSV hosted on GitHub.
+
+--
+
+We can see in the browser that this is indeed straight up comma-separated values, so reading data from this link directly into an R dataframe should work smoothly.
 
 ![](screenshots/csv_github.png)
 
 ---
 
-`read_csv` from the tidyverse's `readr` package allows us to read data directly from the URL of a web-hosted CSV file. Other CSV reading functions would require us to use another function to download the data from the web to our machine first, and then read the CSV into R.
+`readr::read_csv()` allows us to read data directly from the URL of a web-hosted CSV file. Other CSV reading functions would require us to use another function to download the data from the web to our machine first, and then read the CSV into R.
 
 --
 
@@ -54,26 +109,21 @@ We can copy the https link from the GitHub URL of the raw file and feed it in as
 
 ---
 
+(Note that we need to add `"NULL"` as one of the values to be rendered as `NA`.)
+
 ```{r}
-tryCatch({complaints <- read_csv("https://raw.githubusercontent.com/new-york-civil-liberties-union/NYPD-Misconduct-Complaint-Database/master/CCRB_database_raw.csv",
-                       na = c("", "NA", "NULL"))},
-         finally = {complaints <- read_csv("CCRB_database_raw.csv",
-                       na = c("", "NA", "NULL"))}
-         )
+complaints <- read_csv("https://raw.githubusercontent.com/new-york-civil-liberties-union/NYPD-Misconduct-Complaint-Database/master/CCRB_database_raw.csv",
+                       na = c("", "NA", "NULL"))
 
 ```
-
-(Note that we need to add `"NULL"` as one of the values to be rendered as `NA`.)
 
 ---
 
-Next, the NYCLU warns that some of the rows in the data may be duplicated. As a quick pass, we can keep only unique rows.
+### Dropping duplicate rows
 
-To see if we are indeed discarding rows, let's check how many rows are in the data right now:
+The NYCLU warns that some of the rows in the data may be duplicated. As a quick pass, we can keep only fully unique rows.
 
-```{r}
-nrow(complaints)
-```
+Right now, we have **`r nrow(complaints)`** rows in the data immediately after reading it in.
 
 --
 
@@ -84,15 +134,11 @@ complaints %<>%
   distinct()
 ```
 
-How many rows did we drop?
-
 --
 
-```{r}
-nrow(complaints)
-```
+Now we have **`r nrow(complaints)`** rows.
 
-Oh gosh!
+That's a non-negligible number of repeat rows we dropped, so good thing we did that.
 
 ---
 
@@ -115,13 +161,29 @@ complaints <- complaints %>%
   distinct()
 ```
 
+--
+
+We will be using the double-sided pipe frequently for the rest of our data processing.
+
 ---
+
+### The data in its rawest form
+
+```{r, echo = FALSE}
+complaints %>% 
+  sample_n(10) %>% 
+  datatable(options = these_dt_options)
+```
+
+---
+
+### Dropping unnecessary columns
 
 Next, we can drop a couple redundant columns to reduce data size.
 
 --
 
-`AsOfDate` marks the preparation date of the data, so it will be the same for every row (and thus doesn't need to be repeated over 300,000 times).
+`AsOfDate` marks the preparation date of the data, so it will be the same for every row since all the data were pulled at once. Thus, the column doesn't need to be repeated over 300,000 times.
 
 --
 
@@ -135,13 +197,19 @@ complaints %<>%
 
 ---
 
+### Repairing column names
+
 Next, let's re-spell some column names for ease of later processing.
 
-Several of the column names have spaces in them, making them illegal variable names that we would need to quote using backticks in our code, which gets pretty annoying.
+--
+
+Several of the column names have spaces in them, making them illegal variable names that we would need to quote using backticks in our code.
 
 ```{r}
 names(complaints)
 ```
+
+---
 
 We can use the new `dplyr`'s `rename_with()` to run `str_remove_all()` across every column in the data, removing spaces if they are present in the column name.
 
@@ -150,26 +218,44 @@ complaints %<>%
   rename_with(~str_remove_all(., " "), .cols = everything())
 ```
 
+--
+
 ```{r}
 names(complaints)
 ```
 
-
 ---
 
-Finally, for pre-cleaning, we can change the data type and formatting of some columns to save space and facilitate processing.
+### Changing column data types
+
+Finally, for pre-cleaning, we can change the data type and formatting of some columns to save space and facilitate processing:
+
+--
 
 - change all numeric columns to integer to reduce data size
+
+--
+
 - render any date columns as date-time type
 
-We will use `dplyr`'s new `across()` helper function inside of `mutate()` to use logical functions (for coercing numeric columns to integer) and name-based functions (for catching date columns) to choose columns to mutate.
+--
+
+We will use `dplyr`'s new `across()` helper function inside of `mutate()` to use logical functions (for coercing numeric columns to integer) and name-based functions (for catching date columns) to choose columns to mutate with a single function.
 
 ```{r}
 complaints %<>%
   mutate(across(where(is.numeric), as.integer),
          across(ends_with("Date"), lubridate::mdy))
+```
 
-complaints
+---
+
+### The slightly less raw data
+
+```{r, echo = FALSE}
+complaints %>% 
+  sample_n(20) %>% 
+  datatable(options = these_dt_options)
 ```
 
 ---
@@ -180,87 +266,123 @@ class: inverse, middle
 
 ---
 
-Most of this info comes from the NYCLU's informal data dictionary on [their website](https://www.nyclu.org/en/campaigns/nypd-misconduct-database).
+Note: Much of this info comes from the NYCLU's informal data dictionary on [their website](https://www.nyclu.org/en/campaigns/nypd-misconduct-database).
+
+--
+
+### Officer identifying columns
 
 `UniqueId`, `FirstName`, `LastName`, `Rank`, and `Command` all identify officers. (These entries may be repeated for officers with multiple complaints against them, or for a single complaint with multiple misconduct allegations.)
 
-```{r}
+--
+
+For example, a few randomly selected officers with complaints against them:
+
+```{r, echo = FALSE}
 complaints %>% 
   select(UniqueId:Command) %>% 
   distinct() %>% 
-  sample_n(5)
+  sample_n(5) %>%
+  kable()
 ```
 
 Note that `Rank` and `Command` appear to index officers' most recent rank at time of database pull, not their rank at time of incident. For example, officers with multiple complaints lodged against them over the years have only one rank listed for all those complaints.
 
----
+--
 
 The rest of the columns are specific to each complaint.
+
+---
+
+### Incident identifying columns
 
 `ComplaintId` and `IncidentDate` identify whole incidents. Values may be repeated for incidents with multiple misconduct allegations occurring within a single police encounter.
 
 The rest of the columns are complaint-specific. Note that dispositions (rulings) from the CCRB and NYPD are made separately for each complaint. Thus, a single incident may involve multiple misconduct complaints, and those may have distinct rulings for them (say, one may be substantiated while another may be exonerated).
 
-```{r}
+```{r, echo = FALSE}
 complaints %>%
   select(ComplaintId:PenaltyDesc) %>% 
-  sample_n(5)
+  sample_n(6) %>% 
+  kable()
 ```
 
 ---
+
+### Misconduct allegation type
 
 `FADOType` is an unordered categorical column sorting each complaint into one of four categories of misconduct type.
 
---
+.pull-left[
 
-```{r}
+```{r, echo = FALSE, out.height = "100%", dev = "svglite"}
 complaints %>% 
-  count(FADOType)
+  mutate(FADOType = fct_relevel(FADOType,
+                                "Force",
+                                "Abuse of Authority",
+                                "Discourtesy",
+                                "Offensive Language")) %>% 
+  filter(IncidentDate >= "2010-01-01") %>% 
+  ggplot(aes(x = FADOType)) +
+  geom_bar(fill = this_fill) +
+  labs(title = "NYPD Complaints by Misconduct Type",
+       subtitle = "Complaints since 2010") +
+  this_theme
 ```
 
+]
+
 --
+.pull-right[
+
 As you can see, the column's eponymous levels are:
 
---
-
 - Force
-  
---
-
 - Abuse of authority (includes many things: sexual harassment, threats, refusal to show officer docs, search of body or property without warrant, etc)
-  
---
-
 - Discourtesy (general rudeness?)
-  
---
-
 - Offensive language (specifically demographic slurs)
+]
 
 ---
+
+### Misconduct allegation details
 
 The `Allegation` column gives a (very slightly, in some cases) more detailed description of each misconduct complaint over and above the four-level categorical coding in `FADOType`.
 
 --
 
-```{r}
+.pull-left[
+
+A random sampling of allegations:
+
+```{r, echo = FALSE}
 complaints %>% 
   distinct(FADOType, Allegation) %>% 
-  sample_n(5)
+  sample_n(10) %>% 
+  kable()
 ```
+
+]
 
 --
 
-The `Allegation` column has `r length(unique(complaints$Allegation))` unique values. Our guess is that a categorical data entry system was indeed used to log allegation information, but there are too many unique values to analyze the allegation data without recoding it in some way to order the allegations by severity and/or bin the allegations into more columns.
+.pull-right[
+
+The `Allegation` column has `r length(unique(complaints$Allegation))` unique values.
+
+Our guess is that a categorical data entry system was indeed used to log allegation information. However, there are too many unique values to analyze the allegation data without recoding it in some way.
+
+]
 
 ---
+
+### CCRB ruling for each complaint
 
 The next column, `BoardDisposition`, logs the board's determination of the complaint. Here, we can refer to the [CCRB's Data Transparency Initiative pages](https://www1.nyc.gov/site/ccrb/policy/data-transparency-initiative-allegations.page) to parse the CCRB rulings, and possibly order them.
 
 --
 
-> ### Dispositions of Fully Investigated Allegations
->
+> #### Dispositions of Fully Investigated Allegations
 
 --
 
@@ -288,7 +410,29 @@ The next column, `BoardDisposition`, logs the board's determination of the compl
 
 ---
 
-> ### Disposition of Truncated Allegations
+Notice especially for "unsubstantiated" allegations:
+
+> An allegation is **unsubstantiated** if there is not enough evidence to determine whether or not misconduct occurred.
+
+--
+
+This [Gothamist report](https://gothamist.com/news/why-the-majority-of-nypd-misconduct-complaints-end-up-unsubstantiated), exploring a [subset of these data](propublica.org/datastore/dataset/civilian-complaints-against-new-york-city-police-officers) published by ProPublica, suggests that NYPD is deliberately obstructing of CCRB cases, from redacting information to identify and call witnesses, to not sending officers to show up for their hearings.
+
+--
+
+In all of these cases, withholding evidence from the CCRB generally leads them to mark complaints as unsubstantiated because they cannot assemble a "preponderance of the evidence."
+
+--
+
+We should be careful to remember that `BoardDisposition == "Unsubstantiated"` likely indicates data are missing not at random.
+
+---
+
+Many CCRB cases are truncated before they can come to a ruling.
+
+--
+
+> #### Disposition of Truncated Allegations
 
 --
 
@@ -308,44 +452,54 @@ The next column, `BoardDisposition`, logs the board's determination of the compl
 
 ---
 
-```{r}
-unique(complaints$BoardDisposition)
+There are definitely more unique values in the data than official levels, but it looks like several of these values collapse neatly into one of the levels for **Fully Investigated** or **Truncated** allegations listed by the CCRB.
+
+A short sample of the values in `BoardDisposition`:
+
+```{r, echo = FALSE}
+complaints %>% 
+  distinct(BoardDisposition) %>% 
+  sample_n(10) %>% 
+  arrange(BoardDisposition) %>% 
+  kable()
 ```
+
+---
+
+### NYPD internal ruling for each complaint
+
+The next column, `NYPDDisposition`, describes the NYPD's determination of any substantiated complaint.
 
 --
 
-There are definitely more than nine levels here, but it looks like several of them collapse neatly into one of the nine levels listed by the CCRB.
+NYPD rulings appear to be made _after_ CCRB rulings, such that complaints are only elevated to the NYPD to determine penalty and/or further investigation if the CCRB rules the complaint substantiated.
 
----
+--
 
-The next column, `NYPDDisposition`, describes the NYPD's determination of any substantiated complaint. (NYPD rulings appear to be made _after_ CCRB rulings, such that complaints are only elevated to the NYPD to determine penalty and/or further investigation if the CCRB rules the complaint substantiated.)
+A short sample of the values in `NYPDDisposition`:
 
-```{r}
-complaints %>%
-  filter(!is.na(NYPDDisposition)) %>%
-  count(BoardDisposition)
-```
-
----
-
-Like `Allegation`, `NYPDDisposition` looks to have been entered with a categorical coding system, but there are `r complaints %>% filter(!is.na(NYPDDisposition)) %>% distinct(NYPDDisposition) %>% nrow()` unique values that could be standardized and/or ordered further.
-
-```{r}
+```{r, echo = FALSE}
 complaints %>% 
-  filter(!is.na(NYPDDisposition)) %>% 
-  pull(NYPDDisposition) %>% 
-  unique()
+  distinct(NYPDDisposition) %>% 
+  sample_n(10) %>% 
+  arrange(NYPDDisposition) %>% 
+  kable()
 ```
 
 ---
+
+### Penalty levied by NYPD for each complaint
 
 Finally, `PenaltyDesc` describes penalties, if any, that were levied by the NYPD against the officer in question for each complaint.
 
-```{r}
+A short sample of the values in `PenaltyDesc`:
+
+```{r, echo = FALSE}
 complaints %>% 
-  filter(!is.na(PenaltyDesc)) %>% 
-  pull(PenaltyDesc) %>% 
-  unique()
+  distinct(PenaltyDesc) %>% 
+  sample_n(10) %>% 
+  arrange(PenaltyDesc) %>% 
+  kable()
 ```
 
 ---
@@ -356,42 +510,62 @@ class: inverse, middle
 
 ---
 
-The columns that look the most likely to need cleaning are `Allegation`, `BoardDisposition`, `NYPDDisposition`, and `PenaltyDesc`. While they all appear to have been entered using a categorical entry system (so hopefully no free-response), there are a whole lot of levels that can be condensed for easier visualization.
+The columns that look the most likely to need cleaning are:
 
 --
 
-Re: recoding `Allegation`, for our purposes,  we suspect "F-A-D-O" categorical coding will be sufficient for preliminary exploration of complaints by misconduct type. We won't work on recoding `Allegation` for now.
+- `BoardDisposition`
+- `NYPDDisposition`
+- `PenaltyDesc`
+
+--
+
+While they all appear to have been entered using a categorical entry system (so hopefully no free-response), there are a whole lot of levels that can be condensed for easier visualization.
+
+--
+
+We won't work on recoding `Allegation` for today, as we suspect "F-A-D-O" categorical coding will be sufficient for preliminary exploration of complaints by misconduct type. 
 
 ---
 
 ### Separating recommended penalties out of `BoardDisposition`
 
-The next column, `BoardDisposition`, looks to be more tractable to recode. Based on CCRB data descriptions, there should be at maximum nine meaningful levels in the data. We can probably do a bit of work to condense some category levels together to get down from `r english(length(unique(complaints$BoardDisposition[!is.na(complaints$BoardDisposition)])))` to nine.
+Based on CCRB data descriptions, there should be at maximum ten meaningful levels in the data. We can probably do a bit of work to condense some category levels together to get down from `r english(length(unique(complaints$BoardDisposition[!is.na(complaints$BoardDisposition)])))` to ten-ish.
+
+---
+
+.pull-left[
 
 If we look more closely, we see that the biggest offender of messy levels is "Substantiated". All "Substantiated" values have a parenthetical statement appended to them.
 
-```{r}
+```{r, echo = FALSE}
 complaints %>% 
-  filter(grepl("\\(", BoardDisposition)) %>% 
-  distinct(BoardDisposition)
+  filter(startsWith(BoardDisposition, "Substantiated")) %>% 
+  distinct(BoardDisposition) %>% 
+  kable()
 ```
+
+]
 
 --
 
-It looks like these parentheticals correspond to the CCRB's recommended penalty for these complaints.
+.pull-right[
 
-The CCRB describes the [three main families of penalty](https://www1.nyc.gov/site/ccrb/prosecution/police-discipline.page) that may be recommended for substantiated cases from least to most severe:
+It looks like these parentheticals correspond to the CCRB's [three main families of penalty](https://www1.nyc.gov/site/ccrb/prosecution/police-discipline.page) that may be recommended for substantiated cases from least to most severe:
 
 1. Attending additional training (`"Command Lvl Instructions"`, `"Formalized Training"`)
-  1. Note that Command-Level Instructions, which are administered by an officer's direct superior, appear to be equally severe as Formalized Training, which are administered by the Police Academy or NYPD Legal Bureau
-1. `Command Discipline` (which appear to primarily involve docking vacation days)
-1. `Charges` that are prosecuted administratively in the [NYPD Trial Room](https://www1.nyc.gov/site/nypd/bureaus/administrative/trials.page). Note that these are _internal_ trials with the NYPD Administrative Prosecution Unit, _not_ proper criminal cases.
+1. `Command Discipline` (which appears to range from verbal warnings to docking vacation days)
+1. `Charges` that are prosecuted administratively in the [NYPD Trial Room](https://www1.nyc.gov/site/nypd/bureaus/administrative/trials.page) (_internal_ trials with the NYPD Administrative Prosecution Unit, _not_ proper criminal cases)
+
+]
 
 ---
 
 First, we can break the `BoardDisposition` column into two. For any substantiated claims, the second column will contain the recommended penalty, with `NA` for claims not labeled as substantiated.
 
-Here, we're relying on the fact that only the "Substantiated" claims have a parenthetical statement after them. Telling `separate()` to split the `BoardDisposition` column at a space followed by an open parenthesis should fill the new column, `PenaltyRec`, with whatever was in the parentheses if applicable, while filling it with `NA` for rows that don't have parentheses.
+--
+
+Here, we're relying on the fact that only the "Substantiated" claims have a parenthetical statement after them. Telling `tidyr::separate()` to split the `BoardDisposition` column at a space followed by an open parenthesis should fill the new column, `PenaltyRec`, with whatever was in the parentheses if applicable, while filling it with `NA` for rows that don't have parentheses.
 
 ```{r}
 complaints %<>%
@@ -399,10 +573,11 @@ complaints %<>%
            into = c("BoardDisposition", "PenaltyRec"),
            sep = " \\(",
            fill = "right")
-
-complaints %>% 
-  distinct(BoardDisposition, PenaltyRec)
 ```
+
+--
+
+(Notice that we must double-backslash-escape the "(" in the `sep` argument, so that it's treated as a literal character, not a special regex operator.)
 
 ---
 
@@ -411,37 +586,69 @@ After we break the column into two, we clean `PenaltyRec` by removing that pesky
 ```{r}
 complaints %<>%
   mutate(PenaltyRec = str_remove(PenaltyRec, "\\)"))
-
-complaints %>% 
-  distinct(PenaltyRec)
 ```
 
+```{r, echo = FALSE}
+complaints %>% 
+  distinct(BoardDisposition, PenaltyRec) %>% 
+  arrange(BoardDisposition) %>% 
+  datatable(options = these_dt_options)
+```
+
+That takes care of `BoardDisposition == "Substantiated"`. (We'll worry about that new `PenaltyRec` column soon.)
 
 ---
 
 ### Condensing levels of `BoardDisposition`
 
-That takes care of `BoardDisposition == "Substantiated"`. (We'll worry about that new `PenaltyRec` column soon.) Next, we can bin together a few more of the remaining levels. We'll try to stick to the bins laid out on the CCRB website, so that we don't create any false equivalencies.
+Next, we can bin together a few more of the remaining levels.
+
+First, unavailable or uncooperative respondents:
 
 ```{r}
 complaints %<>%
   mutate(BoardDisposition = case_when(
     grepl("Unavailable", BoardDisposition) ~ "ComplainantVictimWitness Unavailable",
     grepl("Uncooperative", BoardDisposition) ~ "ComplainantVictimWitness Uncooperative",
-    startsWith(BoardDisposition, "Miscellaneous - ") ~ "Officer(s) Left",
     TRUE ~ BoardDisposition
   )
   )
+```
+
+--
+
+Then binning the few cases where the officer in question ended employment via retirement, resignation, or  termination:
+
+```{r}
+complaints %<>%
+  mutate(BoardDisposition = if_else(
+    startsWith(BoardDisposition, "Miscellaneous - "),
+    "Officer(s) Left",
+    BoardDisposition
+    ))
 ```
 
 ---
 
 This should get us down to a slightly more workable number of levels.
 
-```{r}
+We can now briefly look at the breakdown of cases by CCRB determination:
+
+```{r, echo = FALSE, out.width="100%", fig.asp = 0.6, dev = "svglite"}
 complaints %>% 
+  filter(IncidentDate >= "2010-01-01") %>% 
   count(BoardDisposition) %>% 
-  arrange(desc(n))
+  mutate(BoardDisposition = str_replace(BoardDisposition, "ComplainantVictimWitness ", "ComplainantVictimWitness\n"),
+         BoardDisposition = fct_reorder(BoardDisposition, n),
+         IsSubstantiated = BoardDisposition == "Substantiated") %>% 
+  ggplot(aes(x = BoardDisposition, y = n, fill = IsSubstantiated)) +
+  geom_bar(stat = "identity") +
+  scale_x_discrete(guide = guide_axis(angle = 45)) +
+  scale_fill_manual(values = c("#0046a6", "#6caddf")) +
+  labs(title = "CCRB Disposition Counts by Type",
+       subtitle = "Complaints since 2010") +
+  guides(fill = FALSE) +
+  this_theme
 ```
 
 ---
@@ -450,16 +657,35 @@ complaints %>%
 
 As a final pass, we can make another version of `BoardDisposition` with even fewer bins, in case that makes later visualizations more straightforward.
 
-The CCRB broke their determinations into two supercategories: **fully investigated** and **truncated** allegations. In fully investigated allegations, we can assume that if a claim was not marked as substantiated, the CCRB determined that misconduct did not occur as alleged. However, for truncated allegations, there is no final determination. Theoretically, those claims may have been substantiated if they had been able to be investigated fully.
+The CCRB broke their determinations into two supercategories: **fully investigated** and **truncated** allegations.
+
+--
+
+In fully investigated allegations, we can assume that if a claim was not marked as substantiated, the CCRB determined that misconduct did not occur as alleged.
+
+--
+
+However, for truncated allegations, there is no final determination. Theoretically, those claims may have been substantiated if they had been able to be investigated fully.
 
 ---
 
-First, we will create `BoardDispositionShort` by `NA`ing out all "Miscellaneous" entries (since we don't know whether they were fully investigated or closed). Then, we will use `forcats::fct_recode()` to finish recoding the new column, by collapsing the other levels into larger bins.
+First, we will create `BoardDispositionShort` by `NA`ing out all "Miscellaneous" entries (since we don't know whether they were fully investigated or closed).
+
+Then, we use `dplyr::coalesce()` to fill in all missing values with "Unknown" (so that we can manipulate the missing data as its own factor level).
 
 ```{r}
 complaints %<>%
   mutate(BoardDispositionShort = na_if(BoardDisposition, "Miscellaneous"),
-         BoardDispositionShort = fct_recode(
+         BoardDispositionShort = coalesce(BoardDispositionShort, "Unknown"))
+```
+
+---
+
+Then, we will use `forcats::fct_recode()` to finish recoding the new column, by collapsing the other levels into larger bins.
+
+```{r}
+complaints %<>%
+  mutate(BoardDispositionShort = fct_recode(
            BoardDispositionShort,
            # omit Substantiated, leave that as is
            `Investigated Not Substantiated` = "Unsubstantiated",
@@ -472,130 +698,330 @@ complaints %<>%
            `Truncated` = "Victim Unidentified",
            `Truncated` = "Officer(s) Left",
            `Truncated` = "Closed - Pending Litigation"
-         ),
-         BoardDispositionShort = fct_relevel(
-           BoardDispositionShort,
-           "Truncated",
-           "Investigated Not Substantiated",
-           "Substantiated"
          ))
 ```
 
+---
+
+### Ordering levels of `BoardDispositionShort`
+
+After we have collapsed bin levels together, we can use `forcats::fct_relevel()` to order the new levels of `BoardDispositionShort` from least to most severe.
+
 ```{r}
+complaints %<>%
+  mutate(BoardDispositionShort = fct_relevel(
+    BoardDispositionShort,
+    "Unknown",
+    "Truncated",
+    "Investigated Not Substantiated",
+    "Substantiated"
+  ))
+```
+
+---
+
+```{r, echo = FALSE, out.width="100%", fig.asp = 0.7, dev = "svglite"}
 complaints %>% 
-  count(BoardDispositionShort) %>% 
-  arrange(desc(n))
+  filter(IncidentDate >= "2010-01-01") %>% 
+  count(BoardDisposition, BoardDispositionShort) %>% 
+  mutate(BoardDisposition = str_replace(BoardDisposition, "ComplainantVictimWitness ", "ComplainantVictimWitness\n"),
+         BoardDispositionShort = str_replace(BoardDispositionShort, "Investigated ", "Investigated\n"),
+         BoardDispositionShort = fct_reorder(BoardDispositionShort, n)) %>% 
+  ggplot(aes(x = BoardDispositionShort, y = n, fill = BoardDisposition)) +
+  geom_col() +
+  scale_x_discrete(guide = guide_axis(angle = 45)) +
+  labs(title = "CCRB Disposition Counts by Type",
+       subtitle = "Complaints since 2010") +
+  this_theme
 ```
 
 ---
 
 ### Condensing levels of `PenaltyRec`
 
-```{r}
+Now, we can clean levels of CCRB-recommended penalties for substantiated cases listed in `PenaltyRec`. As it stands, there are several that can be condensed:
+
+```{r, echo = FALSE}
 complaints %>% 
-  count(PenaltyRec) %>% 
-  arrange(desc(n))
+  distinct(PenaltyRec) %>% 
+  arrange(PenaltyRec) %>% 
+  kable()
 ```
 
 ---
 
-`PenaltyRec == "MOS Unidentified"` "MOS" stands for "member of service", or another term for a uniformed NYPD officer. It's a bit unclear how a claim can be substantiated against a named officer, and then the recommended penalty is listed as "officer unidentified". There's only a few of these cases though, so `NA`ing them out may be the most straightforward.
+First, `PenaltyRec == "MOS Unidentified"`. "MOS" stands for "member of service", or another term for a uniformed NYPD officer. It's a bit unclear how a claim can be substantiated against a named officer, and then the recommended penalty is listed as "officer unidentified". There's only a few of these cases though, so `NA`ing them out may be the most straightforward.
 
 ```{r}
 complaints %<>%
   mutate(PenaltyRec = na_if(PenaltyRec, "MOS Unidentified"))
 ```
 
+--
+
+Next, we duplicate `PenaltyRec` to keep a version with `NA` values where appropriate, and then use `coalesce()` to fill all missing values of `PenaltyRec` with "No Penalty". We will assume if there is nothing listed in here, no penalty was recommended by CCRB (because the case was not substantiated, so they were not within their purview to recommend a penalty).
+
+```{r}
+complaints %<>%
+  mutate(PenaltyRecNA = PenaltyRec,
+         PenaltyRec = coalesce(PenaltyRec, "No Penalty"))
+```
+
+---
+
+Then, we use `forcats::fct_recode()` to bin values down further.
+
+```{r}
+complaints %<>%
+  mutate(PenaltyRec = fct_recode(
+    PenaltyRec,
+    `No Penalty` = "No Recommendations",
+    Instructions = "Command Lvl Instructions",
+    Instructions = "Formalized Training",
+    `Command Discipline` = "Command Discipline A",
+    `Command Discipline` = "Command Discipline B"))
+```
+
+--
+
+Here, we equate both "Command Lvl Instructions" and "Formalized Training" into "Instructions", as both require officers to attend re-training in the event that an officer "misunderstands a policy".
+
+We also equate both levels of "Command Discipline" for simplicity of plotting, though we know we are losing granularity. ("Command Discipline B" is more severe than "A".)
+
 ---
 
 ### Ordering levels of `PenaltyRec`
 
-After that, we can recode to condense the rest of the levels according to the CCRB outline. We'll bin all the Instructions level penalties together since there's nothing to indicate that one is more severe than the other, but we will keep Command Disciplines A and B separate because B is listed as more severe than A.
+--
+
+.pull-left[
+
+Finally, we use `forcats::fct_relevel()` to order `PenaltyRec` from least to most severe.
 
 ```{r}
 complaints %<>%
-  mutate(PenaltyRec = fct_recode(PenaltyRec,
-                                 Instructions = "Command Lvl Instructions",
-                                 Instructions = "Formalized Training",
-                                 `Command Discipline` = "Command Discipline A",
-                                 `Command Discipline` = "Command Discipline B"),
-         PenaltyRec = fct_relevel(PenaltyRec,
-                                  "No Recommendations",
-                                  "Instructions",
-                                  "Command Discipline",
-                                  "Charges"))
+  mutate(PenaltyRec = fct_relevel(
+    PenaltyRec,
+    "No Penalty",
+    "Instructions",
+    "Command Discipline",
+    "Charges"
+  ))
 ```
 
-```{r}
+]
+
+--
+
+.pull-right[
+
+```{r, echo = FALSE, out.width="100%", out.width="100%", dev = "svglite"}
 complaints %>% 
+  filter(IncidentDate >= "2010-01-01", BoardDisposition == "Substantiated") %>% 
   ggplot(aes(x = PenaltyRec)) +
-  geom_bar() +
-  scale_y_log10()
+  geom_bar(fill = this_fill) +
+  # scale_y_log10() +
+  labs(title = "CCRB recommendations for substantiated complaints",
+       subtitle = "Complaints since 2010") +
+  this_theme
 ```
+
+]
 
 ---
 
 ### Condensing values in `NYPDDisposition`
 
-"Negttn" may be short for Negotiation
+Here, we use some assumptions, some common sense, and some Googling of acronyms to figure out which levels of `NYPDDisposition` are equivalent and can be recoded to the same value.
+
+--
+
+Note that for readability, we have done this with a series of `dplyr::if_else()` calls, one for each recode condition. For non-presentation code, we would probably do this all in one `dplyr::case_when()` command.
+
+--
+
+First, we aggregate cases marked as "Closed" or "No Finding" by the NYPD Administrative Prosecution Unit.
 
 ```{r}
 complaints %<>%
-  mutate(NYPDDisposition = if_else(startsWith(NYPDDisposition, "APU Closed") | NYPDDisposition == "No Finding" | grepl("No Disciplinary Action", NYPDDisposition),
-                                   "Closed",
-                                   NYPDDisposition),
-         NYPDDisposition = if_else(grepl("not guilty", NYPDDisposition, ignore.case = TRUE),
-                                   "Not Guilty",
-                                   NYPDDisposition),
-         NYPDDisposition = if_else(grepl("Guilty", NYPDDisposition) & !grepl("Not", NYPDDisposition),
-                                   "Guilty",
-                                   NYPDDisposition),
-         NYPDDisposition = if_else(grepl("Nolo contend", NYPDDisposition),
-                                   "No Contest",
-                                   NYPDDisposition),
-         NYPDDisposition = if_else(grepl("Dismissed", NYPDDisposition),
-                                   "Charge Dismissed",
-                                   NYPDDisposition),
-         NYPDDisposition = if_else(grepl("Decision Pending", NYPDDisposition) | grepl("Filed", NYPDDisposition),
-                                   "Decision Pending",
-                                   NYPDDisposition),
-         NYPDDisposition = if_else(grepl("Instructions", NYPDDisposition) | grepl("Training", NYPDDisposition),
-                                   "Instructions",
-                                   NYPDDisposition),
-         NYPDDisposition = if_else(grepl("with discipline", NYPDDisposition),
-                                   "Command Discipline",
-                                   NYPDDisposition),
-         NYPDDisposition = if_else(grepl("Command Discipline", NYPDDisposition),
-                                   "Command Discipline",
-                                   NYPDDisposition),
-         NYPDDisposition = str_replace(NYPDDisposition, " - ", " "),
-         NYPDDisposition = str_replace(NYPDDisposition, "APU Command Discipline", "Command Discipline")
-         )
+  mutate(NYPDDisposition = if_else(
+    startsWith(NYPDDisposition, "APU Closed") | NYPDDisposition == "No Finding" | grepl("No Disciplinary Action", NYPDDisposition),
+    "Closed",
+    NYPDDisposition
+  ))
 ```
 
 ---
 
+Then, we standardize different spellings of (internal) trial rulings--
+
+--
+
+"Not Guilty",
+
 ```{r}
-complaints %<>%
-  mutate(NYPDDisposition = fct_relevel(NYPDDisposition,
-                                       "Instructions",
-                                       "Command Discipline",
-                                       "Closed",
-                                       "Charge Dismissed",
-                                       "Decision Pending",
-                                       "Not Guilty",
-                                       "No Contest",
-                                       "Guilty"))
+complaints %<>% 
+  mutate(NYPDDisposition = if_else(
+    grepl("not guilty", NYPDDisposition, ignore.case = TRUE),
+    "Not Guilty",
+    NYPDDisposition
+  ))
 ```
 
+--
+
+"Guilty",
+
+```{r}
+complaints %<>% 
+  mutate(NYPDDisposition = if_else(
+    grepl("Guilty", NYPDDisposition) & !grepl("Not", NYPDDisposition),
+    "Guilty",
+    NYPDDisposition
+  ))
+```
 
 ---
 
+and "No Contest" (or "Nolo contendere" in legal Latin).
+
 ```{r}
+complaints %<>% 
+  mutate(NYPDDisposition = if_else(
+    grepl("Nolo contend", NYPDDisposition),
+    "No Contest",
+    NYPDDisposition)
+  )
+```
+
+---
+
+Next, standardizing "Charge Dismissed" cases:
+
+```{r}
+complaints %<>% 
+  mutate(NYPDDisposition = if_else(
+    grepl("Dismissed", NYPDDisposition),
+    "Charge Dismissed",
+    NYPDDisposition
+  ))
+```
+
+--
+
+and apparent "Decision Pending" cases:
+
+```{r}
+complaints %<>% 
+  mutate(NYPDDisposition = if_else(
+    grepl("Decision Pending", NYPDDisposition) | grepl("Filed", NYPDDisposition),
+    "Decision Pending",
+    NYPDDisposition
+  ))
+```
+
+---
+
+Finally, we standardize spelling for cases that don't go to the NYPD APU at all.
+
+(Note that these will usually be redundant with `BoardDisposition`. These are cases that don't actually get charged and adjudicated by the APU, so they don't get penalized any further than the CCRB recommendation.)
+
+--
+
+First, cases assigned "Instructions":
+
+```{r}
+complaints %<>% 
+  mutate(NYPDDisposition = if_else(
+    grepl("Instructions", NYPDDisposition) | grepl("Training", NYPDDisposition),
+    "Instructions",
+    NYPDDisposition
+  ))
+```
+
+---
+
+Then, cases assigned "Command Discipline":
+
+(These commands are written to run in a specific order)
+
+```{r}
+complaints %<>% 
+  mutate(NYPDDisposition = if_else(
+    grepl("with discipline", NYPDDisposition),
+    "Command Discipline",
+    NYPDDisposition
+  ),
+  NYPDDisposition = if_else(
+    grepl("Command Discipline", NYPDDisposition),
+    "Command Discipline",
+    NYPDDisposition
+  ),
+  NYPDDisposition = str_replace(
+    NYPDDisposition,
+    " - ",
+    " "
+  ),
+  NYPDDisposition = str_replace(
+    NYPDDisposition,
+    "APU Command Discipline",
+    "Command Discipline"
+  ))
+```
+
+---
+
+### Ordering levels of `NYPDDisposition`
+
+Again, after we have collapsed bin levels together, we duplicate `NYPDDisposition` to retain a version of the column with `NA`s before using `coalesce()` to fill those values.
+
+```{r}
+complaints %<>%
+  mutate(NYPDDispositionNA = NYPDDisposition,
+         NYPDDisposition = coalesce(NYPDDisposition, "No Penalty"))
+```
+
+---
+
+.pull-left[
+
+Then, we use `fct_relevel()` to order the new levels of `NYPDDisposition` from least to most severe.
+
+```{r}
+complaints %<>%
+  mutate(NYPDDisposition = fct_relevel(
+    NYPDDisposition,
+    "No Penalty",
+    "Instructions",
+    "Command Discipline",
+    "Closed",
+    "Charge Dismissed",
+    "Decision Pending",
+    "Not Guilty",
+    "No Contest",
+    "Guilty"
+  ))
+```
+
+]
+
+--
+
+.pull-left[
+
+```{r, echo = FALSE, out.height = "100%", dev = "svglite"}
 complaints %>% 
-  distinct(NYPDDisposition) %>% 
-  pull(NYPDDisposition)
+  filter(BoardDisposition == "Substantiated",
+         IncidentDate >= "2010-01-01") %>% 
+  ggplot(aes(x = NYPDDisposition)) +
+  geom_bar(fill = this_fill) +
+  scale_x_discrete(guide = guide_axis(angle = 45)) +
+  labs(title = "CCRB-Substantiated Complaints by NYPD Disposition",
+       subtitle = "Complaints since 2010") +
+  this_theme
 ```
+
+]
 
 ---
 
@@ -605,14 +1031,14 @@ Now that we have cleaned up `PenaltyRec`, we can try to clean `PenaltyDesc` anal
 
 ---
 
-One thing we can see off the top is that several officers appear to have received double-barreled penalties. For example, officers might have to take additional training (less severe) forfeit paid vacation days (more severe).
+One thing we can see off the top is that several officers appear to have received double-barreled penalties. For example, officers might have to take additional training (less severe) forfeit paid vacation days (more severe). Here are a few of the double-barreled penalties listed:
 
-Whatever data entry system that was used to log these does not seem to be using a consistent prefix for when forfeited vacation days are listed in the penalty.
-
-```{r}
+```{r, echo = FALSE}
 complaints %>% 
-  distinct(PenaltyDesc) %>% 
-  filter(grepl("\\+", PenaltyDesc))
+  distinct(PenaltyDesc) %>%
+  filter(grepl("\\+", PenaltyDesc)) %>% 
+  sample_n(10) %>% 
+  kable()
 ```
 
 ---
@@ -621,17 +1047,18 @@ For a rough recoding, we can try to condense all double-barreled penalties down 
 
 --
 
-Blessedly, one thing that _does_ appear consistent is that whenever distinct penalties are levied, they look to be separated with a `+` in that record. We can use this as the separator pattern in `str_split()` to turn `PenaltyDesc` into a list-column of character vectors. For most cases, the vector will be `NA` or length 1 for a single penalty. 
+Blessedly, one thing that _does_ appear consistent is that whenever distinct penalties are levied, they look to be separated with a `+` in that record. We can use this as the separator pattern in `stringr::str_split()` to turn `PenaltyDesc` into a list-column of character vectors.
 
-First, we use `stringr::str_split()` to turn `PenaltyDesc` into a list-column of character vectors. If a row _doesn't_ have a ` + ` (we include the surrounding spaces in the split delimiter so we don't have to trim them later), then it is unmodified, turning into a character vector of length 1. If a row _does_ have a ` + `, it is split into a character vector of length 2.
+If a row _doesn't_ have a ` + ` (we include the surrounding spaces in the split delimiter so we don't have to trim them later), then it is unmodified, turning into a character vector of length 1. If a row _does_ have a ` + `, it is split into a character vector of length 2.
 
 ```{r}
 complaints %<>%
   mutate(PenaltyDesc = str_split(PenaltyDesc, " \\+ "))
 ```
 
+--
 
-After this, we use `tidyr::unchop()` to pull `PenaltyDesc` back out into an atomic character column, repeating rows where appropriate for complaints with multiple penalties applied. `unchop()` is like `unnest()`, but instead of unnesting nested dataframes, we unchop a listed column into an atomic column.
+After this, we use `tidyr::unchop()` to pull `PenaltyDesc` back out into an atomic character column, repeating other rows where appropriate. `unchop()` is like `unnest()`, but instead of unnesting nested dataframes, we unchop a listed column into an atomic column.
 
 ```{r}
 complaints %<>%
@@ -648,9 +1075,11 @@ First, binning "Instructions"-level penalties:
 
 ```{r}
 complaints %<>%
-  mutate(PenaltyDesc = if_else(grepl("Instruction", PenaltyDesc) | grepl("Training", PenaltyDesc),
-                               "Instructions",
-                               PenaltyDesc))
+  mutate(PenaltyDesc = if_else(
+    grepl("Instruction", PenaltyDesc) | grepl("Training", PenaltyDesc),
+    "Instructions",
+    PenaltyDesc
+  ))
 ```
 
 --
@@ -659,11 +1088,13 @@ Next, binning different spellings of docked vacation days:
 
 ```{r}
 complaints %<>%
-  mutate(PenaltyDesc = if_else(startsWith(PenaltyDesc, "Forfeit vacation"),
-                               str_replace(str_remove(PenaltyDesc, "days"),
-                                           "Forfeit vacation",
-                                           "Vacation days:"),
-                               PenaltyDesc))
+  mutate(PenaltyDesc = if_else(
+    startsWith(PenaltyDesc, "Forfeit vacation"),
+    str_replace(str_remove(PenaltyDesc, "days"),
+                "Forfeit vacation",
+                "Vacation days:"),
+    PenaltyDesc
+  ))
 ```
 
 ---
@@ -672,9 +1103,11 @@ Similarly, binning different spellings of unpaid suspension days:
 
 ```{r}
 complaints %<>%
-  mutate(PenaltyDesc = if_else(PenaltyDesc == "Suspension",
-                               "Suspen. days",
-                               PenaltyDesc))
+  mutate(PenaltyDesc = if_else(
+    PenaltyDesc == "Suspension",
+    "Suspen. days",
+    PenaltyDesc
+  ))
 ```
 
 --
@@ -684,9 +1117,11 @@ Next, binning apparent "no penalty" determinations:
 ```{r}
 complaints %<>% 
   # Dismissed here seems to refer to charges, not the officer's job
-    mutate(PenaltyDesc = if_else(grepl("no penalty", PenaltyDesc, ignore.case = TRUE) | PenaltyDesc %in% c("Not Guilty - DCT", "Charges Dismissed - DCT", "Dismissed"),
-                                 "No Penalty",
-                                 PenaltyDesc))
+  mutate(PenaltyDesc = if_else(
+    grepl("no penalty", PenaltyDesc, ignore.case = TRUE) | PenaltyDesc %in% c("Not Guilty - DCT", "Charges Dismissed - DCT", "Dismissed"),
+    "No Penalty",
+    PenaltyDesc
+  ))
 ```
 
 ---
@@ -695,9 +1130,11 @@ Standardizing spellings of "Command Discipline" penalties:
 
 ```{r}
 complaints %<>% 
-  mutate(PenaltyDesc = if_else(startsWith(PenaltyDesc, "Command Discipline"),
-                               "Command Discipline",
-                               PenaltyDesc))
+  mutate(PenaltyDesc = if_else(
+    startsWith(PenaltyDesc, "Command Discipline"),
+    "Command Discipline",
+    PenaltyDesc
+  ))
 ```
 
 --
@@ -706,9 +1143,11 @@ And of "Terminated" penalties (rare as they may be):
 
 ```{r}
 complaints %<>%
-  mutate(PenaltyDesc = if_else(PenaltyDesc %in% c("Termination", "Terminated", "Resigned", "Retire"),
-                               "Employment Ended",
-                               PenaltyDesc))
+  mutate(PenaltyDesc = if_else(
+    PenaltyDesc %in% c("Termination", "Terminated", "Resigned", "Retire"),
+    "Employment Ended",
+    PenaltyDesc
+  ))
 ```
 
 ---
@@ -717,26 +1156,33 @@ Standardizing spellings of "Warned and admonished":
 
 ```{r}
 complaints %<>%
-  mutate(PenaltyDesc = if_else(startsWith(PenaltyDesc, "W&A") | PenaltyDesc == "Reprimand",
-                               "Warned and admonished",
-                               PenaltyDesc))
+  mutate(PenaltyDesc = if_else(
+    startsWith(PenaltyDesc, "W&A") | PenaltyDesc == "Reprimand",
+    "Warned and admonished",
+    PenaltyDesc
+  ))
 ```
 
 --
 
-On [Page 6 of the 2018 NYPD Discipline Guide](https://www1.nyc.gov/assets/nypd/downloads/pdf/analysis_and_planning/discipline/discipline-in-the-nypd-2018.pdf), Dismissal Probation is described as a 12-month probationary period where the officer must report extra. They may be reinstated or dismissed at the end of the probation period depending on their performance.
-
-There doesn't appear to be any additional hard documentation as to whether any officers who were put on probation _actually_ ended up getting terminated. From eyeballing it, every time "Probation months:" is listed with a number, it's listed at 12, so it may be reasonable for us to assume that "Probation months:" is equivalent to Dismissal Probation, and the varying penalty amount doesn't need to apply here.
+And of "Dismissal Probation":
 
 ```{r}
-# Note that we are discarding the 12 months count for any that were listed as "Probation months:"
 complaints %<>%
-  mutate(PenaltyDesc = if_else(grepl("Probation", PenaltyDesc),
-                               "Dismissal Probation",
-                               PenaltyDesc))
+  mutate(PenaltyDesc = if_else(
+    grepl("Probation", PenaltyDesc),
+    "Dismissal Probation",
+    PenaltyDesc
+  ))
 ```
 
 --
+
+Note: Dismissal Probation is [described](https://www1.nyc.gov/assets/nypd/downloads/pdf/analysis_and_planning/discipline/discipline-in-the-nypd-2019a.pdf) as a 12-month probationary period where the officer must report extra. They may be reinstated or dismissed at the end of the probation period depending on their performance.
+
+There doesn't appear to be any additional hard documentation as to whether any officers who were put on probation _actually_ ended up getting terminated.
+
+---
 
 Finally, `NA`ing out "Decision Pending" cases with the NYPD APU, since we don't know what the penalty is.
 
@@ -749,22 +1195,49 @@ complaints %<>%
 
 ### Separating variable numbers of docked vacation days and suspension days
 
-```{r}
+The last thing we need to do here is separate the number of docked vacation/suspension days out of any penalties into a new column. That retains the information if we need it, but allows us to bin all "Vacation days" and "Suspen. days" into unified category levels in `PenaltyDesc`.
+
+--
+
+You can see the a few of the penalty day amounts:
+
+```{r, echo = FALSE}
 complaints %>% 
   filter(grepl("\\:", PenaltyDesc)) %>% 
-  distinct()
+  distinct(PenaltyDesc) %>% 
+  sample_n(10) %>% 
+  arrange(PenaltyDesc) %>% 
+  kable()
 ```
 
+---
+
+Similar to our strategy earlier splitting `BoardDisposition`, we can use `separate()` to split those number suffixes off of `PenaltyDesc` into `PenaltyDescAmt`.
 
 ```{r}
 complaints %<>%
-  separate(PenaltyDesc, into = c("PenaltyDesc", "PenaltyDescAmt"), sep = "\\:", fill = "right") %>% 
+  separate(PenaltyDesc,
+           into = c("PenaltyDesc", "PenaltyDescAmt"),
+           sep = "\\:",
+           fill = "right") %>% 
   mutate(PenaltyDescAmt = as.integer(PenaltyDescAmt))
 ```
 
 ---
 
 ### Ordering levels of PenaltyDesc
+
+As before, we first duplicate `PenaltyDesc` first to leave `NA` values where they are. Then, we use `coalesce()` to fill all `NA`s.
+
+```{r}
+complaints %<>%
+  mutate(PenaltyDescNA = PenaltyDesc,
+         PenaltyDesc = coalesce(PenaltyDesc, "No Penalty"))
+```
+
+--
+
+Finally, we use `fct_relevel()` to order all levels of `PenaltyDesc` from least to most severe.
 
 ```{r}
 complaints %<>%
@@ -781,7 +1254,27 @@ complaints %<>%
 
 ---
 
+```{r, echo = FALSE, out.height = "100%", fig.asp = 0.7, dev = "svglite"}
+complaints %>% 
+  filter(BoardDisposition == "Substantiated",
+         IncidentDate >= "2010-01-01") %>% 
+  ggplot(aes(x = PenaltyDesc)) +
+  geom_bar(fill = this_fill) +
+  scale_x_discrete(guide = guide_axis(angle = 45)) +
+  labs(title = "CCRB-Substantiated Complaints by Penalty Levied",
+       subtitle = "Complaints since 2010") +
+  this_theme
+```
+
+---
+
 ### Filtering down to one penalty per substantiated complaint
+
+Finally, now that we have parsed the penalties in `PenaltyDesc`, we can reduce our data down to (at most) one penalty per complaint.
+
+--
+
+By `group_by()`-ing the data by allegation and then `filter()`-ing for the highest penalty in each group, we filter separately for each group, retaining one row per unique allegation.
 
 ```{r}
 complaints %<>%
