@@ -1,12 +1,12 @@
-# NYCLU Civilian Complaing Review Board Data Workshop
+# NYPD Civilian Complaint Review Board Data Workshop
 
-Materials for a Columbia Foundations for Research Computing workshop focusing on cleaning and plotting data on civilian allegations of NYPD misconduct from the [New York Civil Liberties Union](https://github.com/new-york-civil-liberties-union/NYPD-Misconduct-Complaint-Database).
+Materials for a Columbia [Foundations for Research Computing](https://rcfoundations.research.columbia.edu) workshop focusing on cleaning and plotting data on civilian allegations of NYPD misconduct from the [New York Civil Liberties Union](https://github.com/new-york-civil-liberties-union/NYPD-Misconduct-Complaint-Database).
 
 ## The NYPD Misconduct Complaint Database
 
 ![](https://upload.wikimedia.org/wikipedia/en/3/32/CCRB_logo.png)
 
-From the [New York Civil Liberties Union](https://www.nyclu.org/en/campaigns/nypd-misconduct-database):
+From the [NYCLU](https://www.nyclu.org/en/campaigns/nypd-misconduct-database):
 
 >The NYPD Misconduct Complaint Database is a repository of complaints made by the public on record at the Civilian Complaint Review Board (CCRB). These complaints span two distinct periods: the time since the CCRB started operating as an independent city agency outside the NYPD in 1994 and the prior period when the CCRB operated within the NYPD. The database includes 323,911 unique complaint records involving 81,550 active or former NYPD officers. The database does not include pending complaints for which the CCRB has not completed an investigation as of July 2020.
 
