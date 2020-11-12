@@ -61,38 +61,44 @@ load('nypd_ccrb_data_clean.rda')
 # What types of allegations are being made?
 
 Make a dataframe with the 20 most frequent allegations between 2010-2020
+
 ```{r}
 alleg = complaints %>%
-  dplyr::filter(IncidentDate >= "2010-01-01", IncidentDate < "2020-01-01") %>%
-  group_by(Allegation) %>%
-  count() %>%
-  ungroup() %>%
+  dplyr::filter(IncidentDate >= "2010-01-01",
+                IncidentDate < "2020-01-01") %>%
+  count(FADOType, Allegation) %>%
   mutate(Allegation = fct_reorder(Allegation, n)) %>%
   top_n(n = 20, wt = n)
-
 ```
+
 ---
 
 Plot to compare frequencies of allegation types
+
 ```{r}
-top_allegations = ggplot(alleg, aes(x = Allegation, y = n)) +
+top_allegations = ggplot(alleg, aes(x = Allegation, y = n, color = FADOType)) +
   geom_point() +
-  geom_segment( aes(x=Allegation, xend=Allegation, y=0, yend=n)) +
+  geom_segment(aes(x = Allegation, xend = Allegation,
+                   y = 0, yend = n)) +
   coord_flip() +
   labs(y = 'Number of Allegations 2010-2019') +
   theme(axis.ticks = element_blank()) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 18000))
 
 ```
+
 ---
+
 ```{r, echo=FALSE, fig.width = 8, fig.height = 6, dpi = 100}
 top_allegations
 ```
+
 ---
 
 # How many unique officers are there complaints against each year?
 
 Code year
+
 ```{r}
 complaints = mutate(complaints, year = as.numeric(format(IncidentDate,'%Y')))
 ```
