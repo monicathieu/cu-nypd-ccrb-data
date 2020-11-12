@@ -2,17 +2,15 @@
 
 Materials for a Columbia Foundations for Research Computing workshop focusing on cleaning and plotting data on civilian allegations of NYPD misconduct from the [New York Civil Liberties Union](https://github.com/new-york-civil-liberties-union/NYPD-Misconduct-Complaint-Database).
 
-### The NYPD Misconduct Complaint Database
-
-
-From the [New York Civil Liberties Union](https://www.nyclu.org/en/campaigns/nypd-misconduct-database):
-
-*The NYPD Misconduct Complaint Database is a repository of complaints made by the public on record at the Civilian Complaint Review Board (CCRB). These complaints span two distinct periods: the time since the CCRB started operating as an independent city agency outside the NYPD in 1994 and the prior period when the CCRB operated within the NYPD. The database includes 323,911 unique complaint records involving 81,550 active or former NYPD officers. The database does not include pending complaints for which the CCRB has not completed an investigation as of July 2020.*
+## The NYPD Misconduct Complaint Database
 
 ![](https://upload.wikimedia.org/wikipedia/en/3/32/CCRB_logo.png)
 
-Image credit: [Wikimedia Commons](https://en.wikipedia.org/wiki/Civilian_Complaint_Review_Board#/media/File:CCRB_logo.png)
-### A non-exhaustive list of related reports
+From the [New York Civil Liberties Union](https://www.nyclu.org/en/campaigns/nypd-misconduct-database):
+
+>The NYPD Misconduct Complaint Database is a repository of complaints made by the public on record at the Civilian Complaint Review Board (CCRB). These complaints span two distinct periods: the time since the CCRB started operating as an independent city agency outside the NYPD in 1994 and the prior period when the CCRB operated within the NYPD. The database includes 323,911 unique complaint records involving 81,550 active or former NYPD officers. The database does not include pending complaints for which the CCRB has not completed an investigation as of July 2020.
+
+## A non-exhaustive list of related reports
 
 ["Mission Failure: Civilian Review of Policing in New York City -- Summary of Findings", NYCLU, 2006](https://www.nyclu.org/en/mission-failure-civilian-review-policing-new-york-city-summary-findings)
 
@@ -27,6 +25,4 @@ Image credit: [Wikimedia Commons](https://en.wikipedia.org/wiki/Civilian_Complai
 ["323,911 Accusations of N.Y.P.D. Misconduct Are Released Online", New York Times, Aug 20 2020](https://www.nytimes.com/2020/08/20/nyregion/nypd-ccrb-records-published.html)
 
 ["What happened to NYPD officers who were charged with misconduct? They were promoted or paid more." Columbia Spectator, Sept 22 2020](https://www.columbiaspectator.com/news/2020/09/22/what-happened-to-nypd-officers-who-were-charged-with-misconduct-they-were-promoted-or-paid-more/)
-
----
 
