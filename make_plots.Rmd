@@ -134,16 +134,18 @@ officers_year_plot
 
 ---
 
+# What kinds of allegations does the CCRB find are substantiated?
 
-What kinds of allegations does the CCRB find are substantiated?
+--
 
 ```{r}
 # group complaints by type (FADOType and CCRB disposition)
 substantiated = complaints %>%
   dplyr::filter(IncidentDate >= "2010-01-01") %>%
-  group_by(FADOType, BoardDispositionShort) %>%
-  count() 
+  count(FADOType, BoardDispositionShort) 
 ```
+
+--
 
 The number of cases by type and CCRB decision 
 
@@ -159,7 +161,7 @@ num_substantiated_plt = ggplot(substantiated, aes(x = BoardDispositionShort, y =
 
 ---
 
-```{r, echo = FALSE, dpi = 100, fig.width = 8, fig.height = 6}
+```{r, echo = FALSE, fig.width = 8, fig.height = 6, dev = "svglite"}
 num_substantiated_plt
 ```
 
@@ -171,32 +173,31 @@ num_substantiated_plt
 prop_substantiated_plt = complaints %>%
   dplyr::filter(IncidentDate >= "2010-01-01") %>%
   group_by(FADOType) %>%
-  summarise(n= n(), 
-            substantiated = sum(BoardDispositionShort == 'Substantiated'),
-            substantiated_proportion = substantiated/n) %>%
-  ggplot(data = ., aes(x = FADOType, y = substantiated_proportion)) +
+  summarise(n = n(), 
+            substantiated = sum(BoardDispositionShort == 'Substantiated')) %>%
+  mutate(substantiated_proportion = substantiated/n) %>% 
+  ggplot(aes(x = FADOType, y = substantiated_proportion)) +
   geom_point() +
   labs(x = 'Complaint Type', y = 'Proportion of Cases Substantiated')
 ```
 
 ---
 
-```{r, echo = FALSE, dpi = 100, fig.width = 8, fig.height = 6}
+```{r, echo = FALSE, fig.width = 8, fig.height = 6, dev = "svglite"}
 prop_substantiated_plt
 ```
 
 ---
 
-## If the CCRB finds a complaint to be substantiated, what tends to be the outcome? 
+# If the CCRB finds a complaint to be substantiated, what tends to be the outcome? 
 
 Filter only substantiated complaints, count by the penalty applied
+
 ```{r}
 substantiated_penalties = complaints %>%
   dplyr::filter(IncidentDate >= "2010-01-01", 
                 BoardDispositionShort == 'Substantiated') %>%
-  group_by(PenaltyDesc) %>%
-  count() %>%
-  ungroup() %>%
+  count(PenaltyDesc) %>%
   mutate(PenaltyDesc = fct_reorder(PenaltyDesc, n))
 ```
 
@@ -209,13 +210,17 @@ penalty_barplot = ggplot(substantiated_penalties, aes(x = PenaltyDesc, y = n)) +
   geom_text(aes(label=n),hjust=0, vjust=0) +
   ylim(0,2500) +
   coord_flip() +
-  labs(x = '', y = 'Number of Cases', title = 'Outcomes of cases CCPD decided as substantiated')
+  labs(x = '',
+       y = 'Number of Cases',
+       title = 'Outcomes of cases CCPD decided as substantiated')
 ```
+
 ---
 
-```{r, echo = FALSE, dpi = 100, fig.width = 7, fig.height = 6}
+```{r, echo = FALSE, fig.width = 7, fig.height = 6, dev = "svglite"}
 penalty_barplot
 ```
+
 ---
 
 # Can we trace the *flow* of complaints better?
@@ -224,25 +229,25 @@ penalty_barplot
 * What happends at CCRB 
 * What happens in the outcome
 
+--
 
 Maybe alluvial plots can help....
 
-**ggalluvial** package
-https://cran.r-project.org/web/packages/ggalluvial/vignettes/ggalluvial.html
+using the [`ggalluvial`](https://cran.r-project.org/web/packages/ggalluvial/vignettes/ggalluvial.html) package
 
 ---
 
 Summarize the data, grouping by:
 
-* complaint type (FADOType)
-* CCPD Disposition
-* penalty applied (Penalty Desc)
+* complaint type (`FADOType`)
+* CCRB Disposition (`BoardDispositionShort`)
+* penalty applied (`PenaltyDesc`)
+
 ```{r, warning=FALSE}
 alluvial_summary = complaints %>%
   dplyr::filter(IncidentDate >= "2010-01-01") %>%
-  dplyr::group_by(FADOType, BoardDispositionShort, PenaltyDesc) %>%
-  dplyr::summarise(freq = n())
-
+  count(FADOType, BoardDispositionShort, PenaltyDesc) %>%
+  mutate(freq = n)
 ```
 
 ---
