@@ -16,7 +16,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Key questions
+### Key questions
 
 * How many complaints are there?
 
@@ -42,7 +42,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ---
 
-# Load packages
+### Load packages
+
 ```{r, warning=FALSE, message=FALSE}
 # load packages
 library(tidyverse)
@@ -58,7 +59,7 @@ load('nypd_ccrb_data_clean.rda')
 
 ---
 
-# What types of allegations are being made?
+### What types of allegations are being made?
 
 Make a dataframe with the 20 most frequent allegations between 2010-2020
 
@@ -71,7 +72,7 @@ alleg = complaints %>%
   top_n(n = 20, wt = n)
 ```
 
----
+--
 
 Plot to compare frequencies of allegation types
 
@@ -89,23 +90,26 @@ top_allegations = ggplot(alleg, aes(x = Allegation, y = n, color = FADOType)) +
 
 ---
 
-```{r, echo=FALSE, fig.width = 8, fig.height = 6, dev = "svglite"}
+class: center, middle
+
+```{r, echo=FALSE, fig.asp = 3/4, dev = "svglite"}
 top_allegations
 ```
 
 ---
 
-# How many unique officers are there complaints against each year?
+### How many unique officers are there complaints against each year?
 
-Code year
+Pull just the year out of `IncidentDate`
 
 ```{r}
 complaints = mutate(complaints, year = lubridate::year(IncidentDate))
 ```
 
---- 
+--
 
 Get the number of unique officers with complaints for each year
+
 ```{r}
 officers_yearly = complaints %>%
   group_by(year) %>%
@@ -115,26 +119,29 @@ officers_yearly = complaints %>%
 
 ---
 
-
-# Plot number of officers as a function of year
+### Plot number of officers as a function of year
 
 ```{r}
-officers_year_plot = ggplot(officers_yearly, aes(x = year, y = n_officers)) +
+officers_year_plot = ggplot(officers_yearly,
+                            aes(x = year, y = n_officers)) +
   geom_point() +
   geom_line() +
-  labs(x = 'Year', y = 'Number of officers with at least 1 CCRB complaint') +
+  labs(x = 'Year',
+       y = 'Number of officers with at least 1 CCRB complaint') +
   theme(text = element_text(face='bold'))
 ```
 
 ---
 
-```{r, echo = F, fig.width = 8, fig.height = 6, dev = "svglite"}
+class: center, middle
+
+```{r, echo = F, fig.asp = 3/4, dev = "svglite"}
 officers_year_plot
 ```
 
 ---
 
-# What kinds of allegations does the CCRB find are substantiated?
+### What kinds of allegations does the CCRB find are substantiated?
 
 --
 
@@ -150,24 +157,30 @@ substantiated = complaints %>%
 The number of cases by type and CCRB decision 
 
 ```{r}
-num_substantiated_plt = ggplot(substantiated, aes(x = BoardDispositionShort, y = n, color = FADOType)) +
+num_substantiated_plt = ggplot(substantiated,
+                               aes(x = BoardDispositionShort,
+                                   y = n,
+                                   color = FADOType)) +
   geom_point(position = position_dodge(0.4)) +
-  geom_linerange(position = position_dodge(.4), aes(ymin = 0, ymax = n)) +
+  geom_linerange(position = position_dodge(.4),
+                 aes(ymin = 0, ymax = n)) +
   coord_flip() +
-  theme_bw() +
-  labs(y = "Number of cases 2010-2019", x = 'CCPD Status', color = 'Complaint Type') 
-  
+  labs(y = "Number of cases 2010-2019",
+       x = 'CCPD Status',
+       color = 'Complaint Type')
 ```
 
 ---
 
-```{r, echo = FALSE, fig.width = 8, fig.height = 6, dev = "svglite"}
+class: center, middle
+
+```{r, echo = FALSE, fig.asp = 3/4, dev = "svglite"}
 num_substantiated_plt
 ```
 
 ---
 
-# Maybe also helpful to see the *proportion* substantiated of each type
+### Maybe also helpful to see the _proportion_ substantiated of each type
 
 ```{r}
 prop_substantiated_plt = complaints %>%
@@ -176,20 +189,25 @@ prop_substantiated_plt = complaints %>%
   summarise(n = n(), 
             substantiated = sum(BoardDispositionShort == 'Substantiated')) %>%
   mutate(substantiated_proportion = substantiated/n) %>% 
-  ggplot(aes(x = FADOType, y = substantiated_proportion)) +
-  geom_point() +
-  labs(x = 'Complaint Type', y = 'Proportion of Cases Substantiated')
+  ggplot(data = .,
+         aes(x = FADOType, y = substantiated_proportion)) +
+  geom_point(size = 2) +
+  expand_limits(y = 0) +
+  labs(x = 'Complaint Type',
+       y = 'Proportion of Cases Substantiated')
 ```
 
 ---
 
-```{r, echo = FALSE, fig.width = 8, fig.height = 6, dev = "svglite"}
+class: center, middle
+
+```{r, echo = FALSE, fig.asp = 3/4, dev = "svglite"}
 prop_substantiated_plt
 ```
 
 ---
 
-# If the CCRB finds a complaint to be substantiated, what tends to be the outcome? 
+### If the CCRB finds a complaint to be substantiated, what tends to be the outcome? 
 
 Filter only substantiated complaints, count by the penalty applied
 
@@ -205,7 +223,8 @@ substantiated_penalties = complaints %>%
 
 Make barplot
 ```{r}
-penalty_barplot = ggplot(substantiated_penalties, aes(x = PenaltyDesc, y = n)) +
+penalty_barplot = ggplot(substantiated_penalties,
+                         aes(x = PenaltyDesc, y = n)) +
   geom_bar(stat = 'identity', fill = 'blue', alpha = .5) +
   geom_text(aes(label=n),hjust=0, vjust=0) +
   ylim(0,2500) +
@@ -217,16 +236,24 @@ penalty_barplot = ggplot(substantiated_penalties, aes(x = PenaltyDesc, y = n)) +
 
 ---
 
-```{r, echo = FALSE, fig.width = 7, fig.height = 6, dev = "svglite"}
+class: center, middle
+
+```{r, echo = FALSE, fig.asp = 3/4, dev = "svglite"}
 penalty_barplot
 ```
 
 ---
 
-# Can we trace the *flow* of complaints better?
+### Can we trace the *flow* of complaints better?
 
 * By type of allegation
-* What happends at CCRB 
+
+--
+
+* What happens at CCRB
+
+--
+
 * What happens in the outcome
 
 --
@@ -252,46 +279,97 @@ alluvial_summary = complaints %>%
 
 ---
 
-
 Make the alluvial plot
 
+--
+
 * Multiple axes have to be created here
+
+--
+
 * `geom_alluvium()` makes the flowy stuff
+
+--
+
 * `geom_stratum()` makes the boxes
-* `ggrepel::geom_label_repel()` labels the boxes avoiding collisions
+
+--
+
+* `ggrepel::geom_label_repel()` labels the boxes, avoiding collisions
+
+---
+
 ```{r}
 al_disp1 = alluvial_summary %>%
   ggplot(data = ., 
-       aes(y = freq, axis1 = FADOType, axis2 = BoardDispositionShort, axis3 = PenaltyDesc)) +
+         aes(y = freq,
+             axis1 = FADOType,
+             axis2 = BoardDispositionShort,
+             axis3 = PenaltyDesc)) +
   geom_alluvium(aes(fill = BoardDispositionShort), width = 1/12) +
   geom_stratum(width = 1/12, alpha = .5, lwd = .2) +
-  scale_x_continuous(breaks = 1:3, labels = c('Allegation Type', 'CCRB Disposition', 'Penalty Applied')) + 
-  ggrepel::geom_label_repel(stat = "stratum", aes(label = after_stat(stratum)),
-            reverse = TRUE, size =2, direction = 'both', segment.alpha = 1, label.padding = .2) +
-  theme_bw() +
+  scale_x_continuous(breaks = 1:3,
+                     labels = c('Allegation Type',
+                                'CCRB Disposition',
+                                'Penalty Applied')) + 
+  ggrepel::geom_label_repel(stat = "stratum",
+                            aes(label = after_stat(stratum)),
+                            reverse = TRUE,
+                            size = 2,
+                            direction = 'both',
+                            segment.alpha = 1,
+                            label.padding = .2) +
   labs(y = 'Cases', x = 'Decision Points', fill = 'CCRB Disposition')
+```
 
-ggsave(al_disp1, file = 'figures/al_disp1.png', height = 6, width = 12)
+```{r, echo = FALSE}
+ggsave('figures/al_disp1.png', al_disp1, device = 'png', width = 12, height = 6)
 ```
 
 ---
 
+class: center, middle
+
+```{r, echo = F}
+knitr::include_graphics('figures/al_disp1.png')
+```
+
+---
 
 Another alluvial plot option, filling in the color by type...
 
 ```{r}
 al_disp2 = alluvial_summary %>%
   ggplot(data = ., 
-       aes(y = freq, axis1 = FADOType, axis2 = BoardDispositionShort, axis3 = PenaltyDesc)) +
+         aes(y = freq,
+             axis1 = FADOType,
+             axis2 = BoardDispositionShort,
+             axis3 = PenaltyDesc)) +
   geom_alluvium(aes(fill = FADOType), width = 1/12) +
   geom_stratum(width = 1/12, alpha = .5, lwd = .2) +
-  scale_x_continuous(breaks = 1:3, labels = c('Allegation Type', 'CCRB Disposition', 'Penalty Applied')) + 
-  ggrepel::geom_label_repel(stat = "stratum", aes(label = after_stat(stratum)),
-            reverse = TRUE, size =2, direction = 'both', segment.alpha = 1, label.padding = .2) +
-  theme_bw() +
+  scale_x_continuous(breaks = 1:3, labels = c('Allegation Type',
+                                              'CCRB Disposition',
+                                              'Penalty Applied')) + 
+  ggrepel::geom_label_repel(stat = "stratum",
+                            aes(label = after_stat(stratum)),
+                            reverse = TRUE,
+                            size = 2,
+                            direction = 'both',
+                            segment.alpha = 1,
+                            label.padding = .2) +
   labs(y = 'Cases', x = 'Decision Points', fill = 'Allegation Type')
+```
 
-ggsave(al_disp2, file = 'figures/al_disp2.png', height = 6, width = 12)
+```{r, echo = FALSE}
+ggsave('figures/al_disp2.png', al_disp2, device = 'png', width = 12, height = 6)
+```
+
+---
+
+class: center, middle
+
+```{r, echo = F}
+knitr::include_graphics('figures/al_disp2.png')
 ```
 
 ---
@@ -301,21 +379,42 @@ Another alluvial plot option, filling in the color by the eventual penalty appli
 ```{r}
 al_disp3 = alluvial_summary %>%
   ggplot(data = ., 
-       aes(y = freq, axis1 = FADOType, axis2 = BoardDispositionShort, axis3 = PenaltyDesc)) +
+         aes(y = freq,
+             axis1 = FADOType,
+             axis2 = BoardDispositionShort,
+             axis3 = PenaltyDesc)) +
   geom_alluvium(aes(fill = PenaltyDesc), width = 1/12) +
   geom_stratum(width = 1/12, alpha = .5, lwd = .2) +
-  scale_x_continuous(breaks = 1:3, labels = c('Allegation Type', 'CCRB Disposition', 'Penalty Applied')) + 
-  ggrepel::geom_label_repel(stat = "stratum", aes(label = after_stat(stratum)),
-            reverse = TRUE, size =2, direction = 'both', segment.alpha = 1, label.padding = .2) +
-  theme_bw() +
+  scale_x_continuous(breaks = 1:3, labels = c('Allegation Type',
+                                              'CCRB Disposition',
+                                              'Penalty Applied')) + 
+  ggrepel::geom_label_repel(stat = "stratum",
+                            aes(label = after_stat(stratum)),
+                            reverse = TRUE,
+                            size = 2,
+                            direction = 'both',
+                            segment.alpha = 1,
+                            label.padding = .2) +
   labs(y = 'Cases', x = 'Decision Points', fill = 'Penalty Applied')
+```
 
-ggsave(al_disp3, file = 'figures/al_disp3.png', height = 6, width = 12)
+```{r, echo = FALSE}
+ggsave('figures/al_disp3.png', al_disp3, device = 'png', width = 12, height = 6)
 ```
 
 ---
 
-# Wrapping up:
+class: center, middle
+
+```{r, echo = FALSE}
+knitr::include_graphics('figures/al_disp3.png')
+```
+
+---
+
+### Wrapping up
+
+--
 
 There is a **lot** in this dataset, and there is also a **lot** that is missing from this dataset.
 
@@ -336,6 +435,6 @@ There is a **lot** in this dataset, and there is also a **lot** that is missing 
 What goals can this dataset serve? What would we want to be able to know?
 
 
-Thank you to the NYCLU for making the data available!
+Thank you to the [NYCLU](https://www.nyclu.org) for making the data available!
 
 <img src="https://www.clearinghouse.net/images/attorneyOrganization/126.png" width="150" height="100" />
