@@ -1,6 +1,6 @@
 # NYCLU Civilian Complaing Review Board Data Workshop
 
-Materials for a Columbia Foundations for Research Computing workshop focusing on cleaning and plotting data on civilian complaints about the NYPD from the [New York Civil Liberties Union](https://github.com/new-york-civil-liberties-union/NYPD-Misconduct-Complaint-Database).
+Materials for a Columbia Foundations for Research Computing workshop focusing on cleaning and plotting data on civilian allegations of NYPD misconduct from the [New York Civil Liberties Union](https://github.com/new-york-civil-liberties-union/NYPD-Misconduct-Complaint-Database).
 
 ### The NYPD Misconduct Complaint Database
 
