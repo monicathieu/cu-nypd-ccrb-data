@@ -1,7 +1,9 @@
 ---
-title: "Plotting"
+title: "Exploring the NYPD Misconduct Complaint Database"
+subtitle: "Plotting"
 author: "Paul Bloom"
-date: "11/5/2020"
+institute: "Dept of Psychology, Columbia University"
+date: "2020-11-12 (updated: `r Sys.Date()`)"
 output:
   xaringan::moon_reader:
     css: ["theme.css", "fonts.css"]
