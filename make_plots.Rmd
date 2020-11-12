@@ -19,11 +19,25 @@ knitr::opts_chunk$set(echo = TRUE)
 # Key questions
 
 * How many complaints are there?
+
+--
+
 * How many officers are their complaints against?
+
+--
+
 * What types of allegations are most common?
 
-**At what stage(s) are complaints getting diverted away from penalties to the officer?**
+--
+
+* **At what stage(s) are complaints getting diverted away from penalties to the officer?**
+
+--
+
 * What happens to complaints when they are brought to the Civilian Complaint Review Board (CCRB)?
+
+--
+
 * What happens to complaints deemed 'substantiated' by the CCRB when brought to the NYPD?
 
 ---
@@ -292,12 +306,23 @@ ggsave(al_disp3, file = 'figures/al_disp3.png', height = 6, width = 12)
 
 # Wrapping up:
 
-There is a **lot** in this dataset, and there is also a **lot** that is missing from this dataset
+There is a **lot** in this dataset, and there is also a **lot** that is missing from this dataset.
+
+--
+
 * What incidents aren't being reported, and why?
+
+--
+
 * What is *actually* happening at each level?
+
+--
+
 * Are complaints being treated differently based on the gender/race/age of the person filing the complaint?
 
-What goals can this datasets serve? What would we want to be able to know?
+--
+
+What goals can this dataset serve? What would we want to be able to know?
 
 
 Thank you to the NYCLU for making the data available!
