@@ -89,7 +89,7 @@ top_allegations = ggplot(alleg, aes(x = Allegation, y = n, color = FADOType)) +
 
 ---
 
-```{r, echo=FALSE, fig.width = 8, fig.height = 6, dpi = 100}
+```{r, echo=FALSE, fig.width = 8, fig.height = 6, dev = "svglite"}
 top_allegations
 ```
 
@@ -100,7 +100,7 @@ top_allegations
 Code year
 
 ```{r}
-complaints = mutate(complaints, year = as.numeric(format(IncidentDate,'%Y')))
+complaints = mutate(complaints, year = lubridate::year(IncidentDate))
 ```
 
 --- 
@@ -128,7 +128,7 @@ officers_year_plot = ggplot(officers_yearly, aes(x = year, y = n_officers)) +
 
 ---
 
-```{r, echo = F, dpi = 100, fig.width = 8, fig.height = 6}
+```{r, echo = F, fig.width = 8, fig.height = 6, dev = "svglite"}
 officers_year_plot
 ```
 
