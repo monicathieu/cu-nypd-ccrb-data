@@ -1,7 +1,7 @@
 ---
-title: "Data Cleaning in the Face of Data Issues"
-subtitle: "Exploring the NYPD Misconduct Complaint Database"
-author: "Monica Thieu & Paul Bloom"
+title: "Exploring the NYPD Misconduct Complaint Database"
+subtitle: "Data Cleaning"
+author: "Monica Thieu"
 institute: "Dept of Psychology, Columbia University"
 date: "2020-11-12 (updated: `r Sys.Date()`)"
 output:
